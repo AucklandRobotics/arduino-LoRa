@@ -78,6 +78,9 @@ public:
   
   void setOCP(uint8_t mA); // Over Current Protection control
 
+  // HACK. @ErnWong - 2020-02-10. Defer blocking calls until after interrupt.
+  void handleAnyInterrupts();
+
   // deprecated
   void crc() { enableCrc(); }
   void noCrc() { disableCrc(); }

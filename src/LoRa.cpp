@@ -63,6 +63,9 @@
     #define ISR_PREFIX
 #endif
 
+// HACK. @ErnWong - 2020-02-10. Defer blocking calls until after interrupt.
+static bool wasInterrupted = false;
+
 LoRaClass::LoRaClass() :
   _spiSettings(LORA_DEFAULT_SPI_FREQUENCY, MSBFIRST, SPI_MODE0),
   _spi(&LORA_DEFAULT_SPI),
@@ -653,6 +656,15 @@ void LoRaClass::implicitHeaderMode()
   writeRegister(REG_MODEM_CONFIG_1, readRegister(REG_MODEM_CONFIG_1) | 0x01);
 }
 
+// HACK. @ErnWong - 2020-02-10. Defer blocking calls until after interrupt.
+void LoRaClass::handleAnyInterrupts()
+{
+  if (wasInterrupted) {
+    wasInterrupted = false;
+    handleDio0Rise();
+  }
+}
+
 void LoRaClass::handleDio0Rise()
 {
   int irqFlags = readRegister(REG_IRQ_FLAGS);
@@ -715,7 +727,9 @@ uint8_t LoRaClass::singleTransfer(uint8_t address, uint8_t value)
 
 ISR_PREFIX void LoRaClass::onDio0Rise()
 {
-  LoRa.handleDio0Rise();
+  // HACK. @ErnWong - 2020-02-10. Defer blocking calls until after interrupt.
+  wasInterrupted = true;
+  //LoRa.handleDio0Rise();
 }
 
 LoRaClass LoRa;
